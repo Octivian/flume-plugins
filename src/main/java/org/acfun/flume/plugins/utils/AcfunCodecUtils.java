@@ -18,7 +18,7 @@ import javax.crypto.spec.IvParameterSpec;
  * @author user
  *
  */
-public class CodecUtils {
+public class AcfunCodecUtils {
 
 	
 	
@@ -36,7 +36,7 @@ public class CodecUtils {
 	        SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("DES");
 	        SecretKey secretKey = keyFactory.generateSecret(desKeySpec);
 	        IvParameterSpec iv = new IvParameterSpec(key.getBytes("UTF-8"));
-	        cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+	        cipher.init(Cipher.DECRYPT_MODE, secretKey,iv);
 	        return cipher.doFinal(message);
 	  }
 	  /**
@@ -53,7 +53,7 @@ public class CodecUtils {
 	        SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("DES");
 	        SecretKey secretKey = keyFactory.generateSecret(desKeySpec);
 	        IvParameterSpec iv = new IvParameterSpec(key.getBytes("UTF-8"));
-	        cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+	        cipher.init(Cipher.ENCRYPT_MODE, secretKey,iv);
 	        return cipher.doFinal(message);
 	  }
 	  
