@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.apache.flume.Event;
 
-public class AcfunAppJsonEvent implements Event{
+public class AcfunAppJsonEvent implements Event {
 
 	public Map<String, String> getHeaders() {
 		// TODO Auto-generated method stub
@@ -25,6 +25,5 @@ public class AcfunAppJsonEvent implements Event{
 		// TODO Auto-generated method stub
 		
 	}
-
 	
 }
