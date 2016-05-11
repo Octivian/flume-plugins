@@ -248,7 +248,10 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		private String getHttpType(HttpServletRequest request) {
 			String method = request.getMethod();
 			if (method.equals(AcfunHttpSourceConstants.REQUEST_TYPE_GET)) {
-				if (request.getContextPath().equals(AcfunHttpSourceConstants.H5)) {
+				String servletPath = request.getServletPath();
+				String typePath = servletPath.substring(1, servletPath.length());
+				LOG.info("路径为："+servletPath);
+				if (typePath.equals(AcfunHttpSourceConstants.H5)) {
 					return AcfunHttpSourceConstants.H5;
 				} else {
 					return AcfunHttpSourceConstants.WEB;
