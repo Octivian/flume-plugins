@@ -247,18 +247,20 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		 */
 		private String getHttpType(HttpServletRequest request) {
 			String method = request.getMethod();
+			String typePath = "";
 			if (method.equals(AcfunHttpSourceConstants.REQUEST_TYPE_GET)) {
 				String servletPath = request.getServletPath();
-				String typePath = servletPath.substring(1, servletPath.length());
+				typePath = servletPath.substring(1, servletPath.length());
 				LOG.info("路径为："+servletPath);
 				if (typePath.equals(AcfunHttpSourceConstants.H5)) {
 					return AcfunHttpSourceConstants.H5;
-				} else {
+				} else if(StringUtils.isEmpty(typePath)){
 					return AcfunHttpSourceConstants.WEB;
 				}
 			} else {
 				return AcfunHttpSourceConstants.APP;
 			}
+			return null;
 		}
 		
 
@@ -267,13 +269,21 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			List<Event> events = Collections.emptyList(); // create empty list
 			try {
 				String httpType = getHttpType(request);
+				
+				if(StringUtils.isEmpty(httpType)){
+					LOG.warn("路径："+httpType+"不明确，找不到对应的HTTPSourceHandler，请检查请求路径，或配置文件配置的handler是否正确");
+					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "路径："+httpType+"不明确，请检查请求路径 ");
+					return;
+				}
+				
 				events = bizTypeHandlerMap.get(httpType).getEvents(request);
-			} catch (HTTPBadRequestException ex) {
+				
+			}catch (HTTPBadRequestException ex) {
 				LOG.warn("Received bad request from client. ", ex);
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request from client. " + ex.getMessage());
 				return;
 			} catch (Exception ex) {
-				LOG.warn("Deserializer threw unexpected exception. ", ex);
+				LOG.error("Deserializer threw unexpected exception. "+ex.getMessage(), ex);
 				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
 						"Deserializer threw unexpected exception. " + ex.getMessage());
 				return;

@@ -49,6 +49,7 @@ public  class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 			LOG.error("APP解密解压失败，上报数据为："+jb.toString());
 			throw new Exception("APP解密解压失败，上报数据为："+jb.toString());
 		}
+		json = StringUtils.trim(json).replace("\n", "");
 		LOG.info("APP解析后的JSON："+json);
 		
 		return this.convertAppJsonListToEvents(json);
