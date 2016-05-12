@@ -40,10 +40,12 @@ public class AcfunHttpSourceConstants {
   
   public static final String TIMESTAMP = "timestamp";
   
-  public static final String TIME = "time";
+  public static final String APP_JSONK_TIME = "time";
   
-  public static final String IMEI = "IMEI";
+  public static final String APP_JSONK_IMEI = "IMEI";
   
+  public static final String APP_JSONK_EVENT_ID = "event_id";
   
-
+  public static final String APP_JSONV_SESSION_EVENT_ID = "100101";
+  
 }

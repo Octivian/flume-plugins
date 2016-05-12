@@ -82,13 +82,14 @@ public  class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	private  Event buildAppJsonEvent(Map<String,String> eventMap) throws UnsupportedEncodingException{
 		HashMap<String, String> headerMap = new HashMap<String, String>();
 		
-		if(StringUtils.isEmpty(eventMap.get("IMEI"))){
-			headerMap.put(AcfunHttpSourceConstants.LOGTYPE, AcfunHttpSourceConstants.EVENTLOG);
-		}else{
+		String eventId = eventMap.get(AcfunHttpSourceConstants.APP_JSONK_EVENT_ID);
+		if(eventId.equals(AcfunHttpSourceConstants.APP_JSONV_SESSION_EVENT_ID)){
 			headerMap.put(AcfunHttpSourceConstants.LOGTYPE, AcfunHttpSourceConstants.SESSIONLOG);
+		}else{
+			headerMap.put(AcfunHttpSourceConstants.LOGTYPE, AcfunHttpSourceConstants.EVENTLOG);
 		}
 		headerMap.put(AcfunHttpSourceConstants.BIZTYPE, AcfunHttpSourceConstants.APP);
-		String eventTimeStamp = eventMap.get(AcfunHttpSourceConstants.TIME);
+		String eventTimeStamp = eventMap.get(AcfunHttpSourceConstants.APP_JSONK_TIME);
 		headerMap.put(AcfunHttpSourceConstants.TIMESTAMP, eventTimeStamp);
 		
 		Iterator<Entry<String, String>> eventMapIterator = eventMap.entrySet().iterator();

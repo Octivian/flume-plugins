@@ -32,6 +32,7 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 		
 		HashMap<String, String> headerMap = new HashMap<String, String>();
 		headerMap.put(AcfunHttpSourceConstants.TIMESTAMP, String.valueOf(new Date().getTime()));
+		headerMap.put(AcfunHttpSourceConstants.BIZTYPE, AcfunHttpSourceConstants.WEB);
 		List<Event> arrayList = new ArrayList<Event>();
 		arrayList.add(EventBuilder.withBody(queryString.getBytes("UTF-8"), headerMap));
 		return arrayList;
