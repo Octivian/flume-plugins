@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.acfun.flume.plugins.maidian.source.constant.AcfunHttpSourceConstants;
+import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.ChannelException;
 import org.apache.flume.Context;
@@ -114,24 +114,24 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 
 	public synchronized void configure(Context context) {
 		// SSL related config
-		sslEnabled = context.getBoolean(AcfunHttpSourceConstants.SSL_ENABLED, false);
+		sslEnabled = context.getBoolean(AcfunMaidianConstants.SSL_ENABLED, false);
 
-		port = context.getInteger(AcfunHttpSourceConstants.CONFIG_PORT);
-		host = context.getString(AcfunHttpSourceConstants.CONFIG_BIND,
-				AcfunHttpSourceConstants.DEFAULT_BIND);
+		port = context.getInteger(AcfunMaidianConstants.CONFIG_PORT);
+		host = context.getString(AcfunMaidianConstants.CONFIG_BIND,
+				AcfunMaidianConstants.DEFAULT_BIND);
 
 		Preconditions.checkState(host != null && !host.isEmpty(), "HTTPSource hostname specified is empty");
 		Preconditions.checkNotNull(port, "HTTPSource requires a port number to be" + " specified");
 
 		if (sslEnabled) {
 			LOG.debug("SSL configuration enabled");
-			keyStorePath = context.getString(AcfunHttpSourceConstants.SSL_KEYSTORE);
+			keyStorePath = context.getString(AcfunMaidianConstants.SSL_KEYSTORE);
 			Preconditions.checkArgument(keyStorePath != null && !keyStorePath.isEmpty(),
 					"Keystore is required for SSL Conifguration");
-			keyStorePassword = context.getString(AcfunHttpSourceConstants.SSL_KEYSTORE_PASSWORD);
+			keyStorePassword = context.getString(AcfunMaidianConstants.SSL_KEYSTORE_PASSWORD);
 			Preconditions.checkArgument(keyStorePassword != null,
 					"Keystore password is required for SSL Configuration");
-			String excludeProtocolsStr = context.getString(AcfunHttpSourceConstants.EXCLUDE_PROTOCOLS);
+			String excludeProtocolsStr = context.getString(AcfunMaidianConstants.EXCLUDE_PROTOCOLS);
 			if (excludeProtocolsStr == null) {
 				excludedProtocols.add("SSLv3");
 			} else {
@@ -142,7 +142,7 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			}
 		}
 
-		String configedHandlers = context.getString(AcfunHttpSourceConstants.CONFIG_BIZTYPE_HANDLER_MAP)
+		String configedHandlers = context.getString(AcfunMaidianConstants.CONFIG_BIZTYPE_HANDLER_MAP)
 				.trim();
 
 		this.constructorHandlers(configedHandlers);
@@ -156,12 +156,12 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		bizTypeHandlerMap = new ConcurrentHashMap<String,HTTPSourceHandler>();
 		try {
 			String[] handlerEntrys = configedHandlers
-					.split(AcfunHttpSourceConstants.CONFIG_HANDLERS_MAP_SEPRATOR);
+					.split(AcfunMaidianConstants.CONFIG_HANDLERS_MAP_SEPRATOR);
 			for (String handlerEntry : handlerEntrys) {
 				String biztype = StringUtils.substringBefore(handlerEntry,
-						AcfunHttpSourceConstants.CONFIG_HANDLERS_ENTRY_SEPRATOR);
+						AcfunMaidianConstants.CONFIG_HANDLERS_ENTRY_SEPRATOR);
 				String handlerClassName = StringUtils.substringAfter(handlerEntry,
-						AcfunHttpSourceConstants.CONFIG_HANDLERS_ENTRY_SEPRATOR);
+						AcfunMaidianConstants.CONFIG_HANDLERS_ENTRY_SEPRATOR);
 
 				@SuppressWarnings("unchecked")
 				Class<? extends HTTPSourceHandler> clazz = (Class<? extends HTTPSourceHandler>) Class
@@ -248,17 +248,17 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		private String getHttpType(HttpServletRequest request) {
 			String method = request.getMethod();
 			String typePath = "";
-			if (method.equals(AcfunHttpSourceConstants.REQUEST_TYPE_GET)) {
+			if (method.equals(AcfunMaidianConstants.REQUEST_TYPE_GET)) {
 				String servletPath = request.getServletPath();
 				typePath = servletPath.substring(1, servletPath.length());
 				LOG.info("路径为："+servletPath);
-				if (typePath.equals(AcfunHttpSourceConstants.H5)) {
-					return AcfunHttpSourceConstants.H5;
+				if (typePath.equals(AcfunMaidianConstants.H5)) {
+					return AcfunMaidianConstants.H5;
 				} else if(StringUtils.isEmpty(typePath)){
-					return AcfunHttpSourceConstants.WEB;
+					return AcfunMaidianConstants.WEB;
 				}
 			} else {
-				return AcfunHttpSourceConstants.APP;
+				return AcfunMaidianConstants.APP;
 			}
 			return null;
 		}

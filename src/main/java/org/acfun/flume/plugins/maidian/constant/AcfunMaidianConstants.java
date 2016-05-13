@@ -1,9 +1,9 @@
-package org.acfun.flume.plugins.maidian.source.constant;
+package org.acfun.flume.plugins.maidian.constant;
 
 /**
  *AcfunHttpSource相关常量
  */
-public class AcfunHttpSourceConstants {
+public class AcfunMaidianConstants {
 
   public static final String CONFIG_PORT = "port";
   public static final String CONFIG_BIZTYPE_HANDLER_MAP = "handler";
