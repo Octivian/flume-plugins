@@ -12,7 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
 import org.acfun.flume.plugins.utils.AcfunCodecUtils;
-import org.acfun.flume.plugins.utils.NetWorkUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -27,14 +26,14 @@ import com.google.gson.reflect.TypeToken;
 
 public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 
-	private final static Gson gson = new GsonBuilder().disableHtmlEscaping().create();;
+	private final static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
 	protected static final Logger LOG = LoggerFactory.getLogger(AcfunHttpSourceAppHandler.class);
 
 	protected final static Type listType = new TypeToken<List<Map<String, String>>>() {
 	}.getType();
 	
-	private static final String[] commonFields = { "ip","bury_version", "device_id", "uid", "event_id", "session_id", "time",
+	private static final String[] commonFields = {"bury_version", "device_id", "uid", "event_id", "session_id", "time",
 			"previous_page", "network", "refer" };
 
 	private static final Map<String, String[]> detailFieldsMap = new HashMap<String, String[]>();
@@ -79,14 +78,7 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 	public List<Event> getEvents(HttpServletRequest request) throws Exception {
 		StringBuffer jb = new StringBuffer();
 		String line = null;
-		String realIpAddress = "";
-		try{
-			realIpAddress = NetWorkUtils.getRealIpAddress(request);
-			LOG.info("真实IP地址为："+realIpAddress);
-		}catch(Exception ex){
-			LOG.error("获取IP地址失败:" + ex.getMessage());
-			throw new Exception("获取IP地址失败:" + ex.getMessage());
-		}
+		String realIpAddress = request.getHeader("X-Real-IP");
 		BufferedReader reader = null;
 		try{
 			reader = request.getReader();
@@ -167,8 +159,7 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 		Map<String,String> detailMap = new HashMap<String,String>();
 		
 		for (String string : detailFields) {
-			String string2 = eventMap.get(string);
-			detailMap.put(string, string2);
+			detailMap.put(string, eventMap.get(string));
 		}
 		
 		sb.append(gson.toJson(detailMap));

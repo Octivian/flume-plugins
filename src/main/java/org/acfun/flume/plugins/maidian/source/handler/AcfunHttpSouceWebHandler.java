@@ -1,7 +1,6 @@
 package org.acfun.flume.plugins.maidian.source.handler;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,11 +16,16 @@ import org.apache.flume.source.http.HTTPSourceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 
 	protected static final Logger LOG = LoggerFactory.getLogger(AcfunHttpSouceWebHandler.class);
+	
+	private final static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
-	private static final String[] commonFields = { "ip", "bury_version", "device_id", "uid", "event_id", "session_id",
+	private static final String[] commonFields = { "bury_version", "device_id", "uid", "event_id", "session_id",
 			"time", "previous_page", "network", "refer" };
 
 	private static final Map<String, String[]> detailFieldsMap = new HashMap<String, String[]>();
@@ -54,12 +58,39 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 
 		String webLogString = request.getParameter("value");
 
+		String realIpAddress = request.getHeader("X-Real-IP");
+		
 		LOG.info("WEB端获取的数据" + webLogString);
-
+		String[] fields = webLogString.split(",");
+		
+		StringBuffer sb = new StringBuffer();
+		sb.append(realIpAddress+"\t");
+		
+		LOG.info("ip:"+realIpAddress);
+		
+		for (int i = 0;i<commonFields.length;i++) {
+			sb.append(fields[i]+"\t");
+			LOG.info(commonFields[i]+":"+fields[i]);
+		}
+		String eventId = fields[3];
+		String[] detailFields = detailFieldsMap.get(eventId);
+		
+		Map<String,String> detailMap = new HashMap<String,String>();
+		
+		for (int i = 0; i < detailFields.length; i++) {
+			detailMap.put(detailFields[i],fields[commonFields.length-1+i]);
+			LOG.info(detailFields[i]+":"+fields[commonFields.length-1+i]);
+		}
+		sb.append(gson.toJson(detailMap));
+		
 		HashMap<String, String> headerMap = new HashMap<String, String>();
-		headerMap.put(AcfunMaidianConstants.TIMESTAMP, String.valueOf(new Date().getTime()));
+		headerMap.put(AcfunMaidianConstants.LOGTYPE, eventId.equals(AcfunMaidianConstants.APP_JSONV_SESSION_EVENT_ID)
+				? AcfunMaidianConstants.SESSIONLOG : AcfunMaidianConstants.EVENTLOG);
 		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.WEB);
+		
 		List<Event> arrayList = new ArrayList<Event>();
+		
+		
 		arrayList.add(EventBuilder.withBody(webLogString.getBytes("UTF-8"), headerMap));
 		return arrayList;
 	}
