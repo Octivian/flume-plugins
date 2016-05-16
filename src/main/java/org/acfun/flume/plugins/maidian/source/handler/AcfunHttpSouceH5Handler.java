@@ -35,7 +35,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 		detailFieldsMap.put("200001", new String[] {});
 		detailFieldsMap.put("100101", new String[] { "product_id", "device_type", "device_os", "resolution",
 				"cooper_id", "browser_version" });
-		detailFieldsMap.put("200002", new String[] {});
+		detailFieldsMap.put("200002", new String[] { "channel_id"});
 		detailFieldsMap.put("200003", new String[] { "content_id"});
 		detailFieldsMap.put("101010", new String[] { "content_id", "video_id"});
 		detailFieldsMap.put("101011", new String[] { "content_id", "video_id"});
@@ -96,8 +96,8 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 			headerMap.put(AcfunMaidianConstants.LOGTYPE,AcfunMaidianConstants.SESSIONLOG);
 			
 			for (int i = 0; i < detailFields.length; i++) {
-				sb.append(fields[commonFields.length - 1 + i] + "\t");
-				LOG.info(detailFields[i] + ":" + fields[commonFields.length - 1 + i]);
+				sb.append(fields[commonFields.length  + i] + "\t");
+				LOG.info(detailFields[i] + ":" + fields[commonFields.length + i]);
 			}
 			arrayList.add(EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes("UTF-8"), headerMap));
 			
@@ -108,8 +108,8 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 			Map<String, String> detailMap = new HashMap<String, String>();
 
 			for (int i = 0; i < detailFields.length; i++) {
-				detailMap.put(detailFields[i], fields[commonFields.length - 1 + i]);
-				LOG.info(detailFields[i] + ":" + fields[commonFields.length - 1 + i]);
+				detailMap.put(detailFields[i], fields[commonFields.length  + i]);
+				LOG.info(detailFields[i] + ":" + fields[commonFields.length  + i]);
 			}
 			sb.append(gson.toJson(detailMap));
 			

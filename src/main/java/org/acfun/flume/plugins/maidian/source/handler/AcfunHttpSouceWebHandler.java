@@ -105,8 +105,8 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 			headerMap.put(AcfunMaidianConstants.LOGTYPE,AcfunMaidianConstants.SESSIONLOG);
 			
 			for (int i = 0; i < detailFields.length; i++) {
-				sb.append(fields[commonFields.length - 1 + i] + "\t");
-				LOG.info(detailFields[i] + ":" + fields[commonFields.length - 1 + i]);
+				sb.append(fields[commonFields.length+ i] + "\t");
+				LOG.info(detailFields[i] + ":" + fields[commonFields.length + i]);
 			}
 			arrayList.add(EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes("UTF-8"), headerMap));
 			
@@ -117,8 +117,8 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 			Map<String, String> detailMap = new HashMap<String, String>();
 
 			for (int i = 0; i < detailFields.length; i++) {
-				detailMap.put(detailFields[i], fields[commonFields.length - 1 + i]);
-				LOG.info(detailFields[i] + ":" + fields[commonFields.length - 1 + i]);
+				detailMap.put(detailFields[i], fields[commonFields.length+ i]);
+				LOG.info(detailFields[i] + ":" + fields[commonFields.length+ i]);
 			}
 			sb.append(gson.toJson(detailMap));
 			
