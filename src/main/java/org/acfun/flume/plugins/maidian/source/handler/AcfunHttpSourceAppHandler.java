@@ -24,7 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
+public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 
 	private final static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
@@ -32,8 +32,8 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 
 	protected final static Type listType = new TypeToken<List<Map<String, String>>>() {
 	}.getType();
-	
-	private static final String[] commonFields = {"bury_version", "device_id", "uid", "event_id", "session_id", "time",
+
+	private static final String[] commonFields = { "bury_version", "device_id", "uid", "event_id", "session_id", "time",
 			"previous_page", "network", "refer" };
 
 	private static final Map<String, String[]> detailFieldsMap = new HashMap<String, String[]>();
@@ -59,7 +59,7 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 		detailFieldsMap.put("110002", new String[] { "channel_id" });
 		detailFieldsMap.put("110003", new String[] { "child_channel_id" });
 		detailFieldsMap.put("300001", new String[] { "page_id", "page_action" });
-		
+
 		detailFieldsMap.put("200004", new String[] {});
 		detailFieldsMap.put("200005", new String[] {});
 		detailFieldsMap.put("200006", new String[] {});
@@ -80,12 +80,12 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 		String line = null;
 		String realIpAddress = request.getHeader("X-Real-IP");
 		BufferedReader reader = null;
-		try{
+		try {
 			reader = request.getReader();
 			while ((line = reader.readLine()) != null)
 				jb.append(line);
 			LOG.info("APP上报的加密字符串：" + jb.toString());
-		}catch(Exception ex){
+		} catch (Exception ex) {
 			LOG.error("读取BufferedReader失败:" + ex.getMessage());
 			throw new Exception("读取BufferedReader失败:" + ex.getMessage());
 		}
@@ -98,21 +98,22 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 		}
 		json = StringUtils.trim(json).replace(" ", "").replace("\n", "");
 		LOG.info("APP解析后的JSON：" + json);
-		
+
 		List<Map<String, String>> jsonList = gson.fromJson(json, listType);
-		
+
 		this.addRealIpForEachJson(jsonList, realIpAddress);
-		
+
 		return this.convertAppJsonListToEvents(jsonList);
 	}
-	
+
 	/**
 	 * 添加ip字段
+	 * 
 	 * @param jsonList
 	 * @param ip
 	 */
-	
-	private void addRealIpForEachJson(List<Map<String, String>> jsonList,String ip){
+
+	private void addRealIpForEachJson(List<Map<String, String>> jsonList, String ip) {
 		for (int i = 0; i < jsonList.size(); i++) {
 			jsonList.get(i).put("ip", ip);
 		}
@@ -125,8 +126,9 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 	 * @return
 	 * @throws UnsupportedEncodingException
 	 */
-	private List<Event> convertAppJsonListToEvents(List<Map<String, String>> jsonList) throws UnsupportedEncodingException {
-		
+	private List<Event> convertAppJsonListToEvents(List<Map<String, String>> jsonList)
+			throws UnsupportedEncodingException {
+
 		List<Event> events = new ArrayList<Event>(jsonList.size());
 		for (Map<String, String> jsonMap : jsonList) {
 			events.add(this.buildAppJsonEvent(jsonMap));
@@ -141,43 +143,59 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler{
 	 * @return
 	 * @throws UnsupportedEncodingException
 	 */
-	private Event buildAppJsonEvent(Map<String, String> eventMap)  {
-		HashMap<String, String> headerMap = new HashMap<String, String>();
+	private Event buildAppJsonEvent(Map<String, String> eventMap) {
 		
 		String eventId = eventMap.get(AcfunMaidianConstants.APP_JSONK_EVENT_ID);
-		headerMap.put(AcfunMaidianConstants.LOGTYPE, eventId.equals(AcfunMaidianConstants.APP_JSONV_SESSION_EVENT_ID)
-				? AcfunMaidianConstants.SESSIONLOG : AcfunMaidianConstants.EVENTLOG);
+
+		HashMap<String, String> headerMap = new HashMap<String, String>();
 		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.APP);
-		
+
 		StringBuffer sb = new StringBuffer();
+
+		//设置公共字段
 		for (String string : commonFields) {
-			sb.append(eventMap.get(string)+"\t");
+			sb.append(eventMap.get(string) + "\t");
 		}
-		
+
 		String[] detailFields = detailFieldsMap.get(eventId);
-		
-		Map<String,String> detailMap = new HashMap<String,String>();
-		
-		for (String string : detailFields) {
-			detailMap.put(string, eventMap.get(string));
+
+		//根据是否是sessionlog对个性化字段做处理
+		if (eventId.equals(AcfunMaidianConstants.APP_JSONV_SESSION_EVENT_ID)) {
+
+			headerMap.put(AcfunMaidianConstants.LOGTYPE, AcfunMaidianConstants.SESSIONLOG);
+
+			for (String string : detailFields) {
+				sb.append(eventMap.get(string) + "\t");
+			}
+
+			return EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes(), headerMap);
+		} else {
+
+			headerMap.put(AcfunMaidianConstants.LOGTYPE, AcfunMaidianConstants.EVENTLOG);
+
+			Map<String, String> detailMap = new HashMap<String, String>();
+
+			for (String string : detailFields) {
+				detailMap.put(string, eventMap.get(string));
+			}
+
+			sb.append(gson.toJson(detailMap));
+
+			return EventBuilder.withBody(sb.toString().getBytes(), headerMap);
 		}
-		
-		sb.append(gson.toJson(detailMap));
-		
-		return EventBuilder.withBody(sb.toString().getBytes(),
-				headerMap);
+
 	}
 
 	public void configure(Context context) {
 
 	}
 
-//	 public static void main(String[] args) throws Exception {
-//		 Map<String,String> detailMap = new HashMap<String,String>();
-//		 detailMap.put("aaa", "aaaa");
-//		 detailMap.put("bbb", "aaaa");
-//		 detailMap.put("ccc", "aaaa");
-//		 System.out.println(gson.toJson(detailMap));
-//	 }
+	// public static void main(String[] args) throws Exception {
+	// Map<String,String> detailMap = new HashMap<String,String>();
+	// detailMap.put("aaa", "aaaa");
+	// detailMap.put("bbb", "aaaa");
+	// detailMap.put("ccc", "aaaa");
+	// System.out.println(gson.toJson(detailMap));
+	// }
 
 }

@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
+import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.event.EventBuilder;
@@ -49,41 +50,72 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 
 	public List<Event> getEvents(HttpServletRequest request) throws HTTPBadRequestException, Exception {
 		
+		List<Event> arrayList = new ArrayList<Event>(1);
+
 		String webLogString = request.getParameter("value");
 
 		String realIpAddress = request.getHeader("X-Real-IP");
-		
+
 		LOG.info("H5端获取的数据" + webLogString);
-		String[] fields = webLogString.split(",");
+		String[] fields = webLogString.split(",",-1);
 		
-		StringBuffer sb = new StringBuffer();
-		sb.append(realIpAddress+"\t");
-		LOG.info("ip:"+realIpAddress);
-		
-		for (int i = 0;i<commonFields.length;i++) {
-			sb.append(fields[i]+"\t");
-			LOG.info(commonFields[i]+":"+fields[i]);
+
+		if (fields.length < commonFields.length) {
+			throw new Exception("缺失公共参数");
 		}
+		
 		String eventId = fields[3];
-		String[] detailFields = detailFieldsMap.get(eventId);
-		
-		Map<String,String> detailMap = new HashMap<String,String>();
-		
-		for (int i = 0; i < detailFields.length; i++) {
-			detailMap.put(detailFields[i],fields[commonFields.length-1+i]);
-			LOG.info(detailFields[i]+":"+fields[commonFields.length-1+i]);
+
+		StringBuffer sb = new StringBuffer();
+		sb.append(realIpAddress + "\t");
+
+		//设置公共字段
+		for (int i = 0; i < commonFields.length; i++) {
+			sb.append(fields[i] + "\t");
+			LOG.info(commonFields[i] + ":" + fields[i]);
 		}
-		sb.append(gson.toJson(detailMap));
+		
+		
+		String[] detailFields = detailFieldsMap.get(eventId);
+
+		if (detailFields == null) {
+			throw new Exception("事件ID：" + eventId + "不正确，请参考上报文档");
+		}
+
+		if (fields.length != commonFields.length + detailFields.length) {
+			throw new Exception("参数个数不匹配，请检查参数");
+		}
 		
 		HashMap<String, String> headerMap = new HashMap<String, String>();
-		headerMap.put(AcfunMaidianConstants.LOGTYPE, eventId.equals(AcfunMaidianConstants.APP_JSONV_SESSION_EVENT_ID)
-				? AcfunMaidianConstants.SESSIONLOG : AcfunMaidianConstants.EVENTLOG);
-		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.H5);
 		
-		List<Event> arrayList = new ArrayList<Event>();
+		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.WEB);
 		
-		
-		arrayList.add(EventBuilder.withBody(webLogString.getBytes("UTF-8"), headerMap));
+		//根据是否是sessionlog对个性化字段做处理
+		if (eventId.equals(AcfunMaidianConstants.APP_JSONV_SESSION_EVENT_ID)) {
+			
+			headerMap.put(AcfunMaidianConstants.LOGTYPE,AcfunMaidianConstants.SESSIONLOG);
+			
+			for (int i = 0; i < detailFields.length; i++) {
+				sb.append(fields[commonFields.length - 1 + i] + "\t");
+				LOG.info(detailFields[i] + ":" + fields[commonFields.length - 1 + i]);
+			}
+			arrayList.add(EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes("UTF-8"), headerMap));
+			
+		}else{
+			
+			headerMap.put(AcfunMaidianConstants.LOGTYPE,AcfunMaidianConstants.EVENTLOG);
+			
+			Map<String, String> detailMap = new HashMap<String, String>();
+
+			for (int i = 0; i < detailFields.length; i++) {
+				detailMap.put(detailFields[i], fields[commonFields.length - 1 + i]);
+				LOG.info(detailFields[i] + ":" + fields[commonFields.length - 1 + i]);
+			}
+			sb.append(gson.toJson(detailMap));
+			
+			arrayList.add(EventBuilder.withBody(sb.toString().getBytes("UTF-8"), headerMap));
+		}
+
 		return arrayList;
 	}
 
