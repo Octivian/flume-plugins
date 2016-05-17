@@ -88,7 +88,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 		
 		HashMap<String, String> headerMap = new HashMap<String, String>();
 		
-		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.WEB);
+		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.H5);
 		
 		//根据是否是sessionlog对个性化字段做处理
 		if (eventId.equals(AcfunMaidianConstants.APP_JSONV_SESSION_EVENT_ID)) {
