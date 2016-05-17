@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
+import org.acfun.flume.plugins.utils.NetUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -54,7 +55,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 
 		String webLogString = request.getParameter("value");
 
-		String realIpAddress = request.getHeader("X-Real-IP");
+		String realIpAddress = NetUtils.getRealIp(request);
 
 		LOG.info("H5端获取的数据" + webLogString);
 		String[] fields = webLogString.split(",",-1);

@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
 import org.acfun.flume.plugins.utils.AcfunCodecUtils;
+import org.acfun.flume.plugins.utils.NetUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -78,7 +79,7 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	public List<Event> getEvents(HttpServletRequest request) throws Exception {
 		StringBuffer jb = new StringBuffer();
 		String line = null;
-		String realIpAddress = request.getHeader("X-Real-IP");
+		String realIpAddress = NetUtils.getRealIp(request);
 		BufferedReader reader = null;
 		try {
 			reader = request.getReader();
@@ -101,23 +102,10 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 
 		List<Map<String, String>> jsonList = gson.fromJson(json, listType);
 
-		this.addRealIpForEachJson(jsonList, realIpAddress);
 
-		return this.convertAppJsonListToEvents(jsonList);
+		return this.convertAppJsonListToEvents(jsonList,realIpAddress);
 	}
 
-	/**
-	 * 添加ip字段
-	 * 
-	 * @param jsonList
-	 * @param ip
-	 */
-
-	private void addRealIpForEachJson(List<Map<String, String>> jsonList, String ip) {
-		for (int i = 0; i < jsonList.size(); i++) {
-			jsonList.get(i).put("ip", ip);
-		}
-	}
 
 	/**
 	 * json字符串转成flume event并设置event的header
@@ -126,12 +114,12 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	 * @return
 	 * @throws UnsupportedEncodingException
 	 */
-	private List<Event> convertAppJsonListToEvents(List<Map<String, String>> jsonList)
+	private List<Event> convertAppJsonListToEvents(List<Map<String, String>> jsonList,String realIpAddress)
 			throws UnsupportedEncodingException {
 
 		List<Event> events = new ArrayList<Event>(jsonList.size());
 		for (Map<String, String> jsonMap : jsonList) {
-			events.add(this.buildAppJsonEvent(jsonMap));
+			events.add(this.buildAppJsonEvent(jsonMap,realIpAddress));
 		}
 		return events;
 	}
@@ -143,7 +131,7 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	 * @return
 	 * @throws UnsupportedEncodingException
 	 */
-	private Event buildAppJsonEvent(Map<String, String> eventMap) {
+	private Event buildAppJsonEvent(Map<String, String> eventMap,String realIpAddress) {
 		
 		String eventId = eventMap.get(AcfunMaidianConstants.APP_JSONK_EVENT_ID);
 
@@ -151,6 +139,8 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.APP);
 
 		StringBuffer sb = new StringBuffer();
+		
+		sb.append(realIpAddress + "\t");
 
 		//设置公共字段
 		for (String string : commonFields) {
@@ -190,12 +180,17 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 
 	}
 
-	// public static void main(String[] args) throws Exception {
-	// Map<String,String> detailMap = new HashMap<String,String>();
-	// detailMap.put("aaa", "aaaa");
-	// detailMap.put("bbb", "aaaa");
-	// detailMap.put("ccc", "aaaa");
-	// System.out.println(gson.toJson(detailMap));
-	// }
+	 public static void main(String[] args) throws Exception {
+		 Map<String,String> detailMap = new HashMap<String,String>();
+		 detailMap.put("aaa", "aaaa");
+		 detailMap.put("bbb", "aaaa");
+		 detailMap.put("ccc", "aaaa");
+		 addIp(detailMap);
+		 System.out.println(detailMap.get("ip"));
+	 }
+	 
+	 private static void addIp(Map<String,String> detailMap){
+		 detailMap.put("ip", "123");
+	 }
 
 }

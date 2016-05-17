@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
+import org.acfun.flume.plugins.utils.NetUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -31,6 +32,7 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 
 	private static final Map<String, String[]> detailFieldsMap = new HashMap<String, String[]>();
 	static {
+		detailFieldsMap.put("600000", new String[] {});
 		detailFieldsMap.put("200001", new String[] {});
 		detailFieldsMap.put("100101", new String[] { "product_id", "device_type", "device_os", "resolution",
 				"cooper_id", "browser_version" });
@@ -63,7 +65,7 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 
 		String webLogString = request.getParameter("value");
 
-		String realIpAddress = request.getHeader("X-Real-IP");
+		String realIpAddress = NetUtils.getRealIp(request);
 
 		LOG.info("WEB端获取的数据" + webLogString);
 		String[] fields = webLogString.split(",",-1);

@@ -266,6 +266,7 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 
 		@Override
 		public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+			response.setHeader("Content-type", "text/html;charset=UTF-8");  
 			List<Event> events = Collections.emptyList(); // create empty list
 			try {
 				String httpType = getHttpType(request);
