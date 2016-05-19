@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
+import org.acfun.flume.plugins.utils.NetUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.ChannelException;
 import org.apache.flume.Context;
@@ -267,6 +268,7 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		@Override
 		public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 			response.setHeader("Content-type", "text/html;charset=UTF-8");  
+			response.setHeader("Access-Control-Allow-Origin", "*");
 			List<Event> events = Collections.emptyList(); // create empty list
 			try {
 				String httpType = getHttpType(request);
@@ -284,7 +286,7 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request from client. " + ex.getMessage());
 				return;
 			} catch (Exception ex) {
-				LOG.error("Deserializer threw unexpected exception. "+ex.getMessage(), ex);
+				LOG.error("Deserializer threw unexpected exception. "+NetUtils.getRealIp(request)+" : "+ex.getMessage(), ex);
 				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
 						"Deserializer threw unexpected exception. " + ex.getMessage());
 				return;

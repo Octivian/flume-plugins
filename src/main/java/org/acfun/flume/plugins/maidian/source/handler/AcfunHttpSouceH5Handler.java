@@ -40,7 +40,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 		detailFieldsMap.put("200003", new String[] { "content_id"});
 		detailFieldsMap.put("101010", new String[] { "content_id", "video_id"});
 		detailFieldsMap.put("101011", new String[] { "content_id", "video_id"});
-		detailFieldsMap.put("400001", new String[] { "content_id", "video_id"});
+		detailFieldsMap.put("400001", new String[] { "content_id", "video_id" ,"current_time"});
 		detailFieldsMap.put("100001", new String[] { "content_id"});
 		detailFieldsMap.put("100002", new String[] { "content_id"});
 		detailFieldsMap.put("100004", new String[] { "content_id", "down_entry"});
@@ -73,7 +73,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 		//设置公共字段
 		for (int i = 0; i < commonFields.length; i++) {
 			sb.append(fields[i] + "\t");
-			LOG.info(commonFields[i] + ":" + fields[i]);
+			LOG.info(fields[1]+"---"+commonFields[i] + ":" + fields[i]);
 		}
 		
 		
@@ -98,7 +98,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 			
 			for (int i = 0; i < detailFields.length; i++) {
 				sb.append(fields[commonFields.length  + i] + "\t");
-				LOG.info(detailFields[i] + ":" + fields[commonFields.length + i]);
+				LOG.info(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length + i]);
 			}
 			arrayList.add(EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes("UTF-8"), headerMap));
 			
@@ -110,7 +110,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 
 			for (int i = 0; i < detailFields.length; i++) {
 				detailMap.put(detailFields[i], fields[commonFields.length  + i]);
-				LOG.info(detailFields[i] + ":" + fields[commonFields.length  + i]);
+				LOG.info(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length  + i]);
 			}
 			sb.append(gson.toJson(detailMap));
 			
