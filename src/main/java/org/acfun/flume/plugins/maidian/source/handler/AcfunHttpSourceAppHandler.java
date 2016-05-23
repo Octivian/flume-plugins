@@ -85,10 +85,10 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 			reader = request.getReader();
 			while ((line = reader.readLine()) != null)
 				jb.append(line);
-			LOG.info("APP上报的加密字符串：" + jb.toString());
+			LOG.debug("APP上报的加密字符串：" + jb.toString());
 		} catch (Exception ex) {
-			LOG.error("读取BufferedReader失败:" + ex.getMessage());
-			throw new Exception("读取BufferedReader失败:" + ex.getMessage());
+			LOG.error("APP上报的加密字符串：" + jb.toString()+"读取BufferedReader失败:" + ex.getMessage());
+			throw new Exception("APP上报的加密字符串：" + jb.toString()+"读取BufferedReader失败:" + ex.getMessage());
 		}
 		String json = "";
 		try {
@@ -98,7 +98,7 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 			throw new Exception("APP解密解压失败，上报数据为：" + jb.toString());
 		}
 		json = StringUtils.trim(json).replace(" ", "").replace("\n", "");
-		LOG.info("APP解析后的JSON：" + json);
+		LOG.debug("APP解析后的JSON：" + json);
 
 		List<Map<String, String>> jsonList = gson.fromJson(json, listType);
 
@@ -112,10 +112,10 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	 * 
 	 * @param json
 	 * @return
-	 * @throws UnsupportedEncodingException
+	 * @throws Exception 
 	 */
 	private List<Event> convertAppJsonListToEvents(List<Map<String, String>> jsonList,String realIpAddress)
-			throws UnsupportedEncodingException {
+			throws Exception {
 
 		List<Event> events = new ArrayList<Event>(jsonList.size());
 		for (Map<String, String> jsonMap : jsonList) {
@@ -129,9 +129,10 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	 * 
 	 * @param eventString
 	 * @return
+	 * @throws Exception 
 	 * @throws UnsupportedEncodingException
 	 */
-	private Event buildAppJsonEvent(Map<String, String> eventMap,String realIpAddress) {
+	private Event buildAppJsonEvent(Map<String, String> eventMap,String realIpAddress) throws Exception {
 		
 		String eventId = eventMap.get(AcfunMaidianConstants.APP_JSONK_EVENT_ID);
 
@@ -148,6 +149,10 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 		}
 
 		String[] detailFields = detailFieldsMap.get(eventId);
+		
+		if(detailFields == null){
+			throw new Exception("event_id:"+eventId+"错误，请参照埋点文档");
+		}
 
 		//根据是否是sessionlog对个性化字段做处理
 		if (eventId.equals(AcfunMaidianConstants.APP_JSONV_SESSION_EVENT_ID)) {
@@ -177,20 +182,16 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	}
 
 	public void configure(Context context) {
-
+		
 	}
 
 	 public static void main(String[] args) throws Exception {
-		 Map<String,String> detailMap = new HashMap<String,String>();
-		 detailMap.put("aaa", "aaaa");
-		 detailMap.put("bbb", "aaaa");
-		 detailMap.put("ccc", "aaaa");
-		 addIp(detailMap);
-		 System.out.println(detailMap.get("ip"));
+		 Map<String, String[]> hashMap = new HashMap<String,String[]>();
+		 hashMap.put("aaa", new String[]{"aaa"});
+		 hashMap.put("bbb", new String[]{"aaa"});
+		 hashMap.put("ccc", new String[]{});
+		 System.out.println(hashMap.get("ccc"));
 	 }
 	 
-	 private static void addIp(Map<String,String> detailMap){
-		 detailMap.put("ip", "123");
-	 }
 
 }

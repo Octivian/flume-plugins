@@ -43,7 +43,7 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 				new String[] { "block_type", "block_id", "module_type", "module_id", "content_type", "content_id" });
 		detailFieldsMap.put("101010", new String[] { "content_id", "video_id" });
 		detailFieldsMap.put("101011", new String[] { "content_id", "video_id" });
-		detailFieldsMap.put("400001", new String[] { "content_id", "video_id" });
+		detailFieldsMap.put("400001", new String[] { "content_id", "video_id","current_time" });
 		detailFieldsMap.put("100007", new String[] { "content_id" });
 		detailFieldsMap.put("100008", new String[] { "content_id" });
 		detailFieldsMap.put("100009", new String[] { "content_id", "share_to" });
@@ -63,16 +63,16 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 		
 		List<Event> arrayList = new ArrayList<Event>(1);
 
-		String webLogString = request.getParameter("value");
+		String webLogString = StringUtils.substringAfter(request.getQueryString(),"value=");
 
 		String realIpAddress = NetUtils.getRealIp(request);
 
-		LOG.info("WEB端获取的数据" + webLogString);
-		String[] fields = webLogString.split(",",-1);
+		LOG.debug("WEB端获取的数据" + webLogString);
+		String[] fields = webLogString.split(AcfunMaidianConstants.GET_MAIDIAN_LOG_REGEX,-1);
 		
 
 		if (fields.length < commonFields.length) {
-			throw new Exception("缺失公共参数");
+			throw new Exception("WEB端获取的数据" + webLogString+"缺失公共参数");
 		}
 		
 		String eventId = fields[3];
@@ -83,18 +83,18 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 		//设置公共字段
 		for (int i = 0; i < commonFields.length; i++) {
 			sb.append(fields[i] + "\t");
-			LOG.info(fields[1]+"---"+commonFields[i] + ":" + fields[i]);
+			LOG.debug(fields[1]+"---"+commonFields[i] + ":" + fields[i]);
 		}
 		
 		
 		String[] detailFields = detailFieldsMap.get(eventId);
 
 		if (detailFields == null) {
-			throw new Exception("事件ID：" + eventId + "不正确，请参考上报文档");
+			throw new Exception("WEB端获取的数据" + webLogString+"事件ID：" + eventId + "不正确，请参考上报文档");
 		}
 
 		if (fields.length != commonFields.length + detailFields.length) {
-			throw new Exception("参数个数不匹配，请检查参数");
+			throw new Exception("WEB端获取的数据" + webLogString+"参数个数不匹配，请检查参数");
 		}
 		
 		HashMap<String, String> headerMap = new HashMap<String, String>();
@@ -108,7 +108,7 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 			
 			for (int i = 0; i < detailFields.length; i++) {
 				sb.append(fields[commonFields.length+ i] + "\t");
-				LOG.info(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length + i]);
+				LOG.debug(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length + i]);
 			}
 			arrayList.add(EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes("UTF-8"), headerMap));
 			
@@ -120,7 +120,7 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 
 			for (int i = 0; i < detailFields.length; i++) {
 				detailMap.put(detailFields[i], fields[commonFields.length+ i]);
-				LOG.info(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length+ i]);
+				LOG.debug(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length+ i]);
 			}
 			sb.append(gson.toJson(detailMap));
 			

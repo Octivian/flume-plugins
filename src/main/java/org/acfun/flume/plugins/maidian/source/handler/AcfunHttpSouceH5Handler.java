@@ -53,16 +53,15 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 		
 		List<Event> arrayList = new ArrayList<Event>(1);
 
-		String webLogString = request.getParameter("value");
-
+		String webLogString = StringUtils.substringAfter(request.getQueryString(),"value=");
 		String realIpAddress = NetUtils.getRealIp(request);
 
-		LOG.info("H5端获取的数据" + webLogString);
-		String[] fields = webLogString.split(",",-1);
+		LOG.debug("H5端获取的数据" + webLogString);
+		String[] fields = webLogString.split(AcfunMaidianConstants.GET_MAIDIAN_LOG_REGEX,-1);
 		
 
 		if (fields.length < commonFields.length) {
-			throw new Exception("缺失公共参数");
+			throw new Exception("H5端获取的数据" + webLogString+"缺失公共参数");
 		}
 		
 		String eventId = fields[3];
@@ -73,18 +72,18 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 		//设置公共字段
 		for (int i = 0; i < commonFields.length; i++) {
 			sb.append(fields[i] + "\t");
-			LOG.info(fields[1]+"---"+commonFields[i] + ":" + fields[i]);
+			LOG.debug(fields[1]+"---"+commonFields[i] + ":" + fields[i]);
 		}
 		
 		
 		String[] detailFields = detailFieldsMap.get(eventId);
 
 		if (detailFields == null) {
-			throw new Exception("事件ID：" + eventId + "不正确，请参考上报文档");
+			throw new Exception("H5端获取的数据" + webLogString+"事件ID：" + eventId + "不正确，请参考上报文档");
 		}
 
 		if (fields.length != commonFields.length + detailFields.length) {
-			throw new Exception("参数个数不匹配，请检查参数");
+			throw new Exception("H5端获取的数据" + webLogString+"参数个数不匹配，请检查参数");
 		}
 		
 		HashMap<String, String> headerMap = new HashMap<String, String>();
@@ -98,7 +97,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 			
 			for (int i = 0; i < detailFields.length; i++) {
 				sb.append(fields[commonFields.length  + i] + "\t");
-				LOG.info(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length + i]);
+				LOG.debug(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length + i]);
 			}
 			arrayList.add(EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes("UTF-8"), headerMap));
 			
@@ -110,7 +109,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 
 			for (int i = 0; i < detailFields.length; i++) {
 				detailMap.put(detailFields[i], fields[commonFields.length  + i]);
-				LOG.info(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length  + i]);
+				LOG.debug(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length  + i]);
 			}
 			sb.append(gson.toJson(detailMap));
 			

@@ -255,7 +255,7 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 				LOG.info("路径为："+servletPath);
 				if (typePath.equals(AcfunMaidianConstants.H5)) {
 					return AcfunMaidianConstants.H5;
-				} else if(StringUtils.isEmpty(typePath)){
+				} else if(typePath.equals(AcfunMaidianConstants.WEB)){
 					return AcfunMaidianConstants.WEB;
 				}
 			} else {

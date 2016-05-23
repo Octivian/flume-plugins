@@ -48,4 +48,6 @@ public class AcfunMaidianConstants {
   
   public static final String APP_JSONV_SESSION_EVENT_ID = "100101";
   
+  public static final String GET_MAIDIAN_LOG_REGEX = ",(?=[^\\}\\}]*(\\{\\{|$))";
+  
 }
