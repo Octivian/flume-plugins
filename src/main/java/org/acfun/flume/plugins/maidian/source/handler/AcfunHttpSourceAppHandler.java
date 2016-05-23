@@ -123,7 +123,6 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 		}
 		return events;
 	}
-
 	/**
 	 * 构建event 添加header(业务类型)
 	 * 
