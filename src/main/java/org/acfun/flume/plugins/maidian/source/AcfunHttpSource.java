@@ -50,6 +50,7 @@ import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
+import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -207,10 +208,20 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		connectors[0].setHost(host);
 		connectors[0].setPort(port);
 		srv.setConnectors(connectors);
+		
+		
 		try {
 			org.mortbay.jetty.servlet.Context root = new org.mortbay.jetty.servlet.Context(srv, "/",
 					org.mortbay.jetty.servlet.Context.SESSIONS);
 			root.addServlet(new ServletHolder(new FlumeHTTPServlet()), "/");
+			
+//			ServletHolder holderHome = new ServletHolder(new DefaultServlet());
+//			holderHome.setInitParameter("resourceBase","/home/");
+//	        holderHome.setInitParameter("dirAllowed","true");
+//	        holderHome.setInitParameter("pathInfoOnly","true");
+//			root.addServlet(holderHome, "/crossdomain.xml");
+			
+			
 			HTTPServerConstraintUtil.enforceConstraints(root);
 			srv.start();
 			Preconditions.checkArgument(srv.getHandler().equals(root));

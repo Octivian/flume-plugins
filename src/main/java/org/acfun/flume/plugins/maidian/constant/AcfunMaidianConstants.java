@@ -34,9 +34,9 @@ public class AcfunMaidianConstants {
   
   public static final String LOGTYPE = "logtype";
   
-  public static final String EVENTLOG = "eventlog";
+  public static final String EVENTLOG = "event";
   
-  public static final String SESSIONLOG = "sessionlog";
+  public static final String SESSIONLOG = "session";
   
   public static final String TIMESTAMP = "timestamp";
   
