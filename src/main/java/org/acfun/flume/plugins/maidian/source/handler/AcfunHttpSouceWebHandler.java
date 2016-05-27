@@ -8,13 +8,15 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
-import org.acfun.flume.plugins.utils.NetUtils;
+import org.acfun.flume.plugins.utils.AcfunNetUtils;
+import org.acfun.flume.plugins.utils.AcfunTimeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.event.EventBuilder;
 import org.apache.flume.source.http.HTTPBadRequestException;
 import org.apache.flume.source.http.HTTPSourceHandler;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +45,7 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 				new String[] { "block_type", "block_id", "module_type", "module_id", "content_type", "content_id" });
 		detailFieldsMap.put("101010", new String[] { "content_id", "video_id" });
 		detailFieldsMap.put("101011", new String[] { "content_id", "video_id" });
-		detailFieldsMap.put("400001", new String[] { "content_id", "video_id","current_time" });
+		detailFieldsMap.put("400001", new String[] { "content_id", "video_id", "current_time" });
 		detailFieldsMap.put("100007", new String[] { "content_id" });
 		detailFieldsMap.put("100008", new String[] { "content_id" });
 		detailFieldsMap.put("100009", new String[] { "content_id", "share_to" });
@@ -61,69 +63,80 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 
 	public List<Event> getEvents(HttpServletRequest request) throws HTTPBadRequestException, Exception {
 		
+		DateTime now = DateTime.now();
+
 		List<Event> arrayList = new ArrayList<Event>(1);
 
-		String webLogString = StringUtils.substringAfter(request.getQueryString(),"value=");
+		String webLogString = StringUtils.substringAfter(request.getQueryString(), "value=");
 
-		String realIpAddress = NetUtils.getRealIp(request);
+		String realIpAddress = AcfunNetUtils.getRealIp(request);
 
 		LOG.debug("WEB端获取的数据" + webLogString);
-		String[] fields = webLogString.split(AcfunMaidianConstants.GET_MAIDIAN_LOG_REGEX,-1);
-		
+		String[] fields = webLogString.split(AcfunMaidianConstants.GET_MAIDIAN_LOG_REGEX, -1);
 
 		if (fields.length < commonFields.length) {
-			throw new Exception("WEB端获取的数据" + webLogString+"缺失公共参数");
+			throw new Exception("WEB端获取的数据" + webLogString + "缺失公共参数");
 		}
-		
+
 		String eventId = fields[3];
 
 		StringBuffer sb = new StringBuffer();
 		sb.append(realIpAddress + "\t");
 
-		//设置公共字段
+		// 设置公共字段
 		for (int i = 0; i < commonFields.length; i++) {
-			sb.append(fields[i] + "\t");
-			LOG.debug(fields[1]+"---"+commonFields[i] + ":" + fields[i]);
+			if (i == 5) {
+				try {
+					sb.append(AcfunTimeUtils.getTimeStampFromMillisecond(Long.valueOf(fields[i])) + "\t");
+				} catch (Exception e) {
+					throw new Exception("时间戳转换错误，时间戳为：" + fields[i]);
+				}
+			} else {
+				sb.append(fields[i] + "\t");
+			}
+			LOG.debug(fields[1] + "---" + commonFields[i] + ":" + fields[i]);
 		}
-		
-		
+
 		String[] detailFields = detailFieldsMap.get(eventId);
 
 		if (detailFields == null) {
-			throw new Exception("WEB端获取的数据" + webLogString+"事件ID：" + eventId + "不正确，请参考上报文档");
+			throw new Exception("WEB端获取的数据" + webLogString + "事件ID：" + eventId + "不正确，请参考上报文档");
 		}
 
 		if (fields.length != commonFields.length + detailFields.length) {
-			throw new Exception("WEB端获取的数据" + webLogString+"参数个数不匹配，请检查参数");
+			throw new Exception("WEB端获取的数据" + webLogString + "参数个数不匹配，请检查参数");
 		}
-		
+
 		HashMap<String, String> headerMap = new HashMap<String, String>();
-		
+
 		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.WEB);
-		
-		//根据是否是sessionlog对个性化字段做处理
+		headerMap.put(AcfunMaidianConstants.TIMESTAMP, String.valueOf(now.getMillis()));
+
+		// 根据是否是sessionlog对个性化字段做处理
 		if (eventId.equals(AcfunMaidianConstants.APP_JSONV_SESSION_EVENT_ID)) {
-			
-			headerMap.put(AcfunMaidianConstants.LOGTYPE,AcfunMaidianConstants.SESSIONLOG);
-			
+
+			headerMap.put(AcfunMaidianConstants.LOGTYPE, AcfunMaidianConstants.SESSIONLOG);
+
 			for (int i = 0; i < detailFields.length; i++) {
-				sb.append(fields[commonFields.length+ i] + "\t");
-				LOG.debug(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length + i]);
+				sb.append(fields[commonFields.length + i] + "\t");
+				LOG.debug(fields[1] + "---" + detailFields[i] + ":" + fields[commonFields.length + i]);
 			}
-			arrayList.add(EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes("UTF-8"), headerMap));
-			
-		}else{
-			
-			headerMap.put(AcfunMaidianConstants.LOGTYPE,AcfunMaidianConstants.EVENTLOG);
-			
+			sb.append(now.toString("yyyy-MM-dd HH:mm:ss"));
+			arrayList.add(EventBuilder.withBody(sb.toString().getBytes("UTF-8"),
+					headerMap));
+
+		} else {
+
+			headerMap.put(AcfunMaidianConstants.LOGTYPE, AcfunMaidianConstants.EVENTLOG);
+
 			Map<String, String> detailMap = new HashMap<String, String>();
 
 			for (int i = 0; i < detailFields.length; i++) {
-				detailMap.put(detailFields[i], fields[commonFields.length+ i]);
-				LOG.debug(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length+ i]);
+				detailMap.put(detailFields[i], fields[commonFields.length + i]);
+				LOG.debug(fields[1] + "---" + detailFields[i] + ":" + fields[commonFields.length + i]);
 			}
-			sb.append(gson.toJson(detailMap));
-			
+			sb.append(gson.toJson(detailMap)+"\t");
+			sb.append(now.toString("yyyy-MM-dd HH:mm:ss"));
 			arrayList.add(EventBuilder.withBody(sb.toString().getBytes("UTF-8"), headerMap));
 		}
 

@@ -12,12 +12,14 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
 import org.acfun.flume.plugins.utils.AcfunCodecUtils;
-import org.acfun.flume.plugins.utils.NetUtils;
+import org.acfun.flume.plugins.utils.AcfunNetUtils;
+import org.acfun.flume.plugins.utils.AcfunTimeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.event.EventBuilder;
 import org.apache.flume.source.http.HTTPSourceHandler;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +81,7 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	public List<Event> getEvents(HttpServletRequest request) throws Exception {
 		StringBuffer jb = new StringBuffer();
 		String line = null;
-		String realIpAddress = NetUtils.getRealIp(request);
+		String realIpAddress = AcfunNetUtils.getRealIp(request);
 		BufferedReader reader = null;
 		try {
 			reader = request.getReader();
@@ -133,18 +135,28 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	 */
 	private Event buildAppJsonEvent(Map<String, String> eventMap,String realIpAddress) throws Exception {
 		
+		DateTime now = DateTime.now();
+		
 		String eventId = eventMap.get(AcfunMaidianConstants.APP_JSONK_EVENT_ID);
 
 		HashMap<String, String> headerMap = new HashMap<String, String>();
 		headerMap.put(AcfunMaidianConstants.BIZTYPE, AcfunMaidianConstants.APP);
-
+		headerMap.put(AcfunMaidianConstants.TIMESTAMP, String.valueOf(now.getMillis()));
 		StringBuffer sb = new StringBuffer();
 		
 		sb.append(realIpAddress + "\t");
 
 		//设置公共字段
 		for (String string : commonFields) {
-			sb.append(eventMap.get(string) + "\t");
+			if(string.equals("time")){
+				try{
+					sb.append(AcfunTimeUtils.getTimeStampFromMillisecond(Long.valueOf(eventMap.get(string))) + "\t");
+				}catch(Exception e){
+					throw new Exception("时间戳转换错误，时间戳为："+eventMap.get(string));
+				}
+			}else{
+				sb.append(eventMap.get(string) + "\t");
+			}
 		}
 
 		String[] detailFields = detailFieldsMap.get(eventId);
@@ -161,8 +173,8 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 			for (String string : detailFields) {
 				sb.append(eventMap.get(string) + "\t");
 			}
-
-			return EventBuilder.withBody(StringUtils.substringBeforeLast(sb.toString(), "\t").getBytes(), headerMap);
+			sb.append(now.toString("yyyy-MM-dd HH:mm:ss"));
+			return EventBuilder.withBody(sb.toString().getBytes(), headerMap);
 		} else {
 
 			headerMap.put(AcfunMaidianConstants.LOGTYPE, AcfunMaidianConstants.EVENTLOG);
@@ -173,8 +185,8 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 				detailMap.put(string, eventMap.get(string));
 			}
 
-			sb.append(gson.toJson(detailMap));
-
+			sb.append(gson.toJson(detailMap)+"\t");
+			sb.append(now.toString("yyyy-MM-dd HH:mm:ss"));
 			return EventBuilder.withBody(sb.toString().getBytes(), headerMap);
 		}
 
@@ -184,13 +196,5 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 		
 	}
 
-	 public static void main(String[] args) throws Exception {
-		 Map<String, String[]> hashMap = new HashMap<String,String[]>();
-		 hashMap.put("aaa", new String[]{"aaa"});
-		 hashMap.put("bbb", new String[]{"aaa"});
-		 hashMap.put("ccc", new String[]{});
-		 System.out.println(hashMap.get("ccc"));
-	 }
-	 
 
 }

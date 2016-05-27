@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.acfun.flume.plugins.maidian.constant.AcfunMaidianConstants;
-import org.acfun.flume.plugins.utils.NetUtils;
+import org.acfun.flume.plugins.utils.AcfunNetUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.ChannelException;
 import org.apache.flume.Context;
@@ -50,7 +50,6 @@ import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
-import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -291,13 +290,17 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 				}
 				
 				events = bizTypeHandlerMap.get(httpType).getEvents(request);
+				//特殊处理h5心跳错误跳过
+				if(events == null){
+					return;
+				}
 				
 			}catch (HTTPBadRequestException ex) {
 				LOG.warn("Received bad request from client. ", ex);
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request from client. " + ex.getMessage());
 				return;
 			} catch (Exception ex) {
-				LOG.error("Deserializer threw unexpected exception. "+NetUtils.getRealIp(request)+" : "+ex.getMessage(), ex);
+				LOG.error("Deserializer threw unexpected exception. "+AcfunNetUtils.getRealIp(request)+" : "+ex.getMessage(), ex);
 				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
 						"Deserializer threw unexpected exception. " + ex.getMessage());
 				return;
