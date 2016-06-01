@@ -22,5 +22,9 @@ public class AcfunTimeUtils {
 		return dateTime.toString("yyyy-MM-dd HH:mm:ss");
 	}
 	
+	public static void main(String[] args) {
+		System.out.println(getTimeStampFromMillisecond(1464702146));
+	}
+	
 	
 }

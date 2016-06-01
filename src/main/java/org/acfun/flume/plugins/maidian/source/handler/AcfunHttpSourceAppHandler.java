@@ -149,10 +149,14 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 		//设置公共字段
 		for (String string : commonFields) {
 			if(string.equals("time")){
-				try{
-					sb.append(AcfunTimeUtils.getTimeStampFromMillisecond(Long.valueOf(eventMap.get(string))) + "\t");
-				}catch(Exception e){
-					throw new Exception("时间戳转换错误，时间戳为："+eventMap.get(string));
+				if(StringUtils.isEmpty(eventMap.get(string))){
+					sb.append(now.toString("yyyy-MM-dd HH:mm:ss")+"\t");
+				}else{
+					try {
+						sb.append(AcfunTimeUtils.getTimeStampFromMillisecond(Long.valueOf(eventMap.get(string))) + "\t");
+					} catch (Exception e) {
+						throw new Exception("时间戳转换错误，时间戳为：" + eventMap.get(string));
+					}
 				}
 			}else{
 				sb.append(eventMap.get(string) + "\t");
