@@ -56,6 +56,7 @@ public class AcfunHttpSouceWebHandler implements HTTPSourceHandler {
 		detailFieldsMap.put("100006", new String[] { "have_result", "search_content" });
 		detailFieldsMap.put("100016", new String[] { "content_id", "video_id" });
 		detailFieldsMap.put("100017", new String[] { "from_content_id", "from_video_id", "content_id" });
+		detailFieldsMap.put("000000", new String[] {});
 	}
 
 	public void configure(Context context) {
