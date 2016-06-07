@@ -18,6 +18,7 @@
 package org.acfun.flume.plugins.maidian.source;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,6 +57,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * A source which accepts Flume Events by HTTP POST and GET. GET should be used
@@ -112,6 +114,11 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 	private volatile String keyStorePassword;
 	private volatile Boolean sslEnabled;
 	private final List<String> excludedProtocols = new LinkedList<String>();
+	
+//	private static final  Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+	
+	protected final static Type listType = new TypeToken<List<Map<String, String>>>() {
+	}.getType();
 
 	public synchronized void configure(Context context) {
 		// SSL related config
@@ -220,7 +227,6 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 //	        holderHome.setInitParameter("pathInfoOnly","true");
 //			root.addServlet(holderHome, "/crossdomain.xml");
 			
-			
 			HTTPServerConstraintUtil.enforceConstraints(root);
 			srv.start();
 			Preconditions.checkArgument(srv.getHandler().equals(root));
@@ -245,9 +251,11 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		sourceCounter.stop();
 		LOG.info("Http source {} stopped. Metrics: {}", getName(), sourceCounter);
 	}
+	
 
 	private class FlumeHTTPServlet extends HttpServlet {
 
+		
 		private static final long serialVersionUID = 4891924863218790344L;
 		
 		/**
@@ -277,9 +285,8 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 
 		@Override
 		public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-			response.setHeader("Content-type", "text/html;charset=UTF-8");  
-			response.setHeader("Access-Control-Allow-Origin", "*");
 			List<Event> events = Collections.emptyList(); // create empty list
+			response.setHeader("Access-Control-Allow-Origin", "*");
 			try {
 				String httpType = getHttpType(request);
 				
@@ -288,9 +295,7 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "路径："+httpType+"不明确，请检查请求路径 ");
 					return;
 				}
-				
 				events = bizTypeHandlerMap.get(httpType).getEvents(request);
-				//特殊处理h5心跳错误跳过
 				if(events == null){
 					return;
 				}
@@ -329,11 +334,13 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			sourceCounter.incrementAppendBatchAcceptedCount();
 			sourceCounter.addToEventAcceptedCount(events.size());
 		}
+		
 
 		@Override
 		public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 			doPost(request, response);
 		}
+		
 	}
 
 	private static class HTTPSourceSocketConnector extends SslSocketConnector {

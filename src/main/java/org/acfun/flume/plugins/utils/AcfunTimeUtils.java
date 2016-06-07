@@ -17,13 +17,15 @@ public class AcfunTimeUtils {
 	 */
 
 	public static String getTimeStampFromMillisecond(long millisecond){
+		if(millisecond<10000000000l&&999999999l<millisecond)
+			millisecond*=1000;
 		DateTime dateTime = new DateTime(millisecond);
 		
 		return dateTime.toString("yyyy-MM-dd HH:mm:ss");
 	}
 	
 	public static void main(String[] args) {
-		System.out.println(getTimeStampFromMillisecond(1464702146));
+		System.out.println(getTimeStampFromMillisecond(1464938126l));
 	}
 	
 	
