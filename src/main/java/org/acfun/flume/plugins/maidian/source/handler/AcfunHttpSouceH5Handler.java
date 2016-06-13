@@ -133,6 +133,9 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 
 			for (int i = 0; i < detailFields.length; i++) {
 				detailMap.put(detailFields[i], fields[commonFields.length  + i]);
+				if("current_time".equals(detailFields[i])&&!StringUtils.isNumeric(fields[commonFields.length  + i])){
+					LOG.warn("心跳上报时间错误："+fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length  + i]+"---"+webLogString);
+				}
 				LOG.debug(fields[1]+"---"+detailFields[i] + ":" + fields[commonFields.length  + i]);
 			}
 			sb.append(gson.toJson(detailMap)+"\t");
