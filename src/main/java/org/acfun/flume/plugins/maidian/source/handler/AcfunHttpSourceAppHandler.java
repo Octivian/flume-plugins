@@ -107,6 +107,8 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 
 		return this.convertAppJsonListToEvents(jsonList,realIpAddress);
 	}
+	
+	
 
 
 	/**
@@ -116,12 +118,12 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	 * @return
 	 * @throws Exception 
 	 */
-	private List<Event> convertAppJsonListToEvents(List<Map<String, String>> jsonList,String realIpAddress)
+	private  List<Event> convertAppJsonListToEvents(List<Map<String, String>> jsonList,String realIpAddress)
 			throws Exception {
 
 		List<Event> events = new ArrayList<Event>(jsonList.size());
 		for (Map<String, String> jsonMap : jsonList) {
-			events.add(this.buildAppJsonEvent(jsonMap,realIpAddress));
+			events.add(buildAppJsonEvent(jsonMap,realIpAddress));
 		}
 		return events;
 	}
@@ -133,7 +135,7 @@ public class AcfunHttpSourceAppHandler implements HTTPSourceHandler {
 	 * @throws Exception 
 	 * @throws UnsupportedEncodingException
 	 */
-	private Event buildAppJsonEvent(Map<String, String> eventMap,String realIpAddress) throws Exception {
+	private  Event buildAppJsonEvent(Map<String, String> eventMap,String realIpAddress) throws Exception {
 		
 		DateTime now = DateTime.now();
 		
