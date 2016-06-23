@@ -48,6 +48,7 @@ public class AcfunHttpSouceH5Handler implements HTTPSourceHandler {
 		detailFieldsMap.put("100004", new String[] { "content_id", "down_entry"});
 		detailFieldsMap.put("100006", new String[] { "have_result", "search_content" });
 		detailFieldsMap.put("600000", new String[] {});
+		detailFieldsMap.put("100007", new String[] {});
 	}
 
 	public void configure(Context context) {}
