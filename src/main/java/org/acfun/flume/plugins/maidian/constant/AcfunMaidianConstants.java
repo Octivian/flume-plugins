@@ -6,7 +6,12 @@ package org.acfun.flume.plugins.maidian.constant;
 public class AcfunMaidianConstants {
 
   public static final String CONFIG_PORT = "port";
-  public static final String CONFIG_BIZTYPE_HANDLER_MAP = "handler";
+  public static final String CONFIG_HANDLERS = "handler";
+  
+  public static final String CONFIG_HANDLERS_CLASS = "class";
+  
+  public static final String CONFIG_HANDLERS_CONF_PATH = "confpath";
+  
   public static final String CONFIG_BIND = "bind";
 
   public static final String DEFAULT_BIND = "0.0.0.0";
@@ -45,6 +50,10 @@ public class AcfunMaidianConstants {
   public static final String APP_JSONK_IMEI = "IMEI";
   
   public static final String APP_JSONK_EVENT_ID = "event_id";
+  
+  public static final String APP_JSONK_BURY_VERSION = "bury_version";
+  
+  public static final String APP_JSONK_DEVICE_ID = "device_id";
   
   public static final String APP_JSONV_SESSION_EVENT_ID = "100101";
   

@@ -17,16 +17,22 @@
  */
 package org.acfun.flume.plugins.maidian.source;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.servlet.http.HttpServlet;
@@ -57,6 +63,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.reflect.TypeToken;
 
 /**
@@ -106,6 +113,8 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 	private volatile String host;
 
 	private Map<String, HTTPSourceHandler> bizTypeHandlerMap;
+	
+	private  Map<File,HTTPSourceHandler> fileHandlerMap;
 
 	private SourceCounter sourceCounter;
 
@@ -114,9 +123,12 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 	private volatile String keyStorePassword;
 	private volatile Boolean sslEnabled;
 	private final List<String> excludedProtocols = new LinkedList<String>();
+
+	private ScheduledExecutorService executorService;
 	
-//	private static final  Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-	
+	// private static final Gson gson = new
+	// GsonBuilder().disableHtmlEscaping().create();
+
 	protected final static Type listType = new TypeToken<List<Map<String, String>>>() {
 	}.getType();
 
@@ -125,8 +137,7 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		sslEnabled = context.getBoolean(AcfunMaidianConstants.SSL_ENABLED, false);
 
 		port = context.getInteger(AcfunMaidianConstants.CONFIG_PORT);
-		host = context.getString(AcfunMaidianConstants.CONFIG_BIND,
-				AcfunMaidianConstants.DEFAULT_BIND);
+		host = context.getString(AcfunMaidianConstants.CONFIG_BIND, AcfunMaidianConstants.DEFAULT_BIND);
 
 		Preconditions.checkState(host != null && !host.isEmpty(), "HTTPSource hostname specified is empty");
 		Preconditions.checkNotNull(port, "HTTPSource requires a port number to be" + " specified");
@@ -150,35 +161,33 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			}
 		}
 
-		String configedHandlers = context.getString(AcfunMaidianConstants.CONFIG_BIZTYPE_HANDLER_MAP)
-				.trim();
+//		String configedHandlers = context.getString(AcfunMaidianConstants.CONFIG_HANDLERS).trim();
+		
 
-		this.constructorHandlers(configedHandlers);
+		this.constructorHandlers(context);
 
 		if (sourceCounter == null) {
 			sourceCounter = new SourceCounter(getName());
 		}
+
 	}
-
-	private void constructorHandlers(String configedHandlers) {
-		bizTypeHandlerMap = new ConcurrentHashMap<String,HTTPSourceHandler>();
-		try {
-			String[] handlerEntrys = configedHandlers
-					.split(AcfunMaidianConstants.CONFIG_HANDLERS_MAP_SEPRATOR);
-			for (String handlerEntry : handlerEntrys) {
-				String biztype = StringUtils.substringBefore(handlerEntry,
-						AcfunMaidianConstants.CONFIG_HANDLERS_ENTRY_SEPRATOR);
-				String handlerClassName = StringUtils.substringAfter(handlerEntry,
-						AcfunMaidianConstants.CONFIG_HANDLERS_ENTRY_SEPRATOR);
-
+	
+	private void constructorHandlers(Context context){
+		bizTypeHandlerMap = new ConcurrentHashMap<String, HTTPSourceHandler>();
+		fileHandlerMap = new ConcurrentHashMap<File,HTTPSourceHandler>();
+		try{
+			String[] configedHandlers = context.getString(AcfunMaidianConstants.CONFIG_HANDLERS).trim().split(",");
+			for (String handler : configedHandlers) {
+				String handlerclazz = context.getString(AcfunMaidianConstants.CONFIG_HANDLERS+"."+handler+"."+AcfunMaidianConstants.CONFIG_HANDLERS_CLASS);
+				String handlerConfPath = context.getString(AcfunMaidianConstants.CONFIG_HANDLERS+"."+handler+"."+AcfunMaidianConstants.CONFIG_HANDLERS_CONF_PATH);
+				File file = new File(handlerConfPath);
 				@SuppressWarnings("unchecked")
-				Class<? extends HTTPSourceHandler> clazz = (Class<? extends HTTPSourceHandler>) Class
-						.forName(handlerClassName);
-
-				bizTypeHandlerMap.put(biztype, clazz.getDeclaredConstructor().newInstance());
-				LOG.info("create handler : "+clazz.getName()+"  for :"+biztype);
+				Class<? extends HTTPSourceHandler> clazz = (Class<? extends HTTPSourceHandler>) Class.forName(handlerclazz);
+				HTTPSourceHandler httpSourceHandler = clazz.getDeclaredConstructor().newInstance();
+				bizTypeHandlerMap.put(handler, httpSourceHandler);
+				fileHandlerMap.put(file, httpSourceHandler);
 			}
-		} catch (ClassNotFoundException ex) {
+		}catch (ClassNotFoundException ex) {
 			LOG.error("custom handler not found", ex);
 			Throwables.propagate(ex);
 		} catch (ClassCastException ex) {
@@ -188,7 +197,59 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			LOG.error("Error configuring AcfunHttpSource!", ex);
 			Throwables.propagate(ex);
 		}
+		
 	}
+
+//	private void constructorHandlers(String configedHandlers) {
+//		bizTypeHandlerMap = new ConcurrentHashMap<String, HTTPSourceHandler>();
+//		try {
+//			String[] handlerEntrys = configedHandlers.split(AcfunMaidianConstants.CONFIG_HANDLERS_MAP_SEPRATOR);
+//			for (String handlerEntry : handlerEntrys) {
+//				String biztype = StringUtils.substringBefore(handlerEntry,
+//						AcfunMaidianConstants.CONFIG_HANDLERS_ENTRY_SEPRATOR);
+//				String handlerClassName = StringUtils.substringAfter(handlerEntry,
+//						AcfunMaidianConstants.CONFIG_HANDLERS_ENTRY_SEPRATOR);
+//
+//				@SuppressWarnings("unchecked")
+//				Class<? extends HTTPSourceHandler> clazz = (Class<? extends HTTPSourceHandler>) Class
+//						.forName(handlerClassName);
+//				HTTPSourceHandler httpSourceHandler = clazz.getDeclaredConstructor().newInstance();
+//				bizTypeHandlerMap.put(biztype, httpSourceHandler);
+//				LOG.info("create handler : " + clazz.getName() + "  for :" + biztype);
+//				
+//				//配置handler对应的配置文件，考虑做成可配置到flume.conf中
+//				if(httpSourceHandler instanceof AcfunHttpSourceH5Handler){
+//					LOG.info("put handler : " + clazz.getName() + "  for :/var/lib/flume-ng/maidian-h5-json.conf");
+//					File file = new File("/var/lib/flume-ng/maidian-h5-json.conf");
+//					LOG.info("++++++++++++++++++"+file.exists());
+//					fileHandlerMap.put(file, httpSourceHandler);
+//				}
+//				if(httpSourceHandler instanceof AcfunHttpSourceAppHandler){
+//					LOG.info("put handler : " + clazz.getName() + "  for :/var/lib/flume-ng/maidian-app-json.conf");
+//					File file = new File("/var/lib/flume-ng/maidian-app-json.conf");
+//					LOG.info("++++++++++++++++++"+file.exists());
+//					fileHandlerMap.put(file, httpSourceHandler);
+//				}
+//				if(httpSourceHandler instanceof AcfunHttpSourceWebHandler){
+//					LOG.info("put handler : " + clazz.getName() + "  for :/var/lib/flume-ng/maidian-web-json.conf");
+//					File file = new File("/var/lib/flume-ng/maidian-web-json.conf");
+//					LOG.info("++++++++++++++++++"+file.exists());
+//					fileHandlerMap.put(file, httpSourceHandler);
+//				}
+//				
+//				
+//			}
+//		} catch (ClassNotFoundException ex) {
+//			LOG.error("custom handler not found", ex);
+//			Throwables.propagate(ex);
+//		} catch (ClassCastException ex) {
+//			LOG.error("custom handler must implements HTTPSourceHandler");
+//			Throwables.propagate(ex);
+//		} catch (Exception ex) {
+//			LOG.error("Error configuring AcfunHttpSource!", ex);
+//			Throwables.propagate(ex);
+//		}
+//	}
 
 	@Override
 	public void start() {
@@ -214,19 +275,19 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		connectors[0].setHost(host);
 		connectors[0].setPort(port);
 		srv.setConnectors(connectors);
-		
-		
+
 		try {
 			org.mortbay.jetty.servlet.Context root = new org.mortbay.jetty.servlet.Context(srv, "/",
 					org.mortbay.jetty.servlet.Context.SESSIONS);
 			root.addServlet(new ServletHolder(new FlumeHTTPServlet()), "/");
-			
-//			ServletHolder holderHome = new ServletHolder(new DefaultServlet());
-//			holderHome.setInitParameter("resourceBase","/home/");
-//	        holderHome.setInitParameter("dirAllowed","true");
-//	        holderHome.setInitParameter("pathInfoOnly","true");
-//			root.addServlet(holderHome, "/crossdomain.xml");
-			
+
+			// ServletHolder holderHome = new ServletHolder(new
+			// DefaultServlet());
+			// holderHome.setInitParameter("resourceBase","/home/");
+			// holderHome.setInitParameter("dirAllowed","true");
+			// holderHome.setInitParameter("pathInfoOnly","true");
+			// root.addServlet(holderHome, "/crossdomain.xml");
+
 			HTTPServerConstraintUtil.enforceConstraints(root);
 			srv.start();
 			Preconditions.checkArgument(srv.getHandler().equals(root));
@@ -237,6 +298,19 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		Preconditions.checkArgument(srv.isRunning());
 		sourceCounter.start();
 		super.start();
+		
+		
+		
+		executorService = Executors.newSingleThreadScheduledExecutor(
+	            new ThreadFactoryBuilder().setNameFormat("conf-file-poller-%d")
+	                .build());
+
+		AcFunMaidianConfFileWatcherRunnable fileWatcherRunnable =
+	        new AcFunMaidianConfFileWatcherRunnable(fileHandlerMap);
+
+	    executorService.scheduleWithFixedDelay(fileWatcherRunnable, 0, 10,
+	        TimeUnit.SECONDS);
+	    
 	}
 
 	@Override
@@ -251,13 +325,11 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 		sourceCounter.stop();
 		LOG.info("Http source {} stopped. Metrics: {}", getName(), sourceCounter);
 	}
-	
 
 	private class FlumeHTTPServlet extends HttpServlet {
 
-		
 		private static final long serialVersionUID = 4891924863218790344L;
-		
+
 		/**
 		 * 获取http请求业务类型
 		 * 
@@ -270,10 +342,10 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			if (method.equals(AcfunMaidianConstants.REQUEST_TYPE_GET)) {
 				String servletPath = request.getServletPath();
 				typePath = servletPath.substring(1, servletPath.length());
-				LOG.debug("路径为："+servletPath);
+				LOG.debug("路径为：" + servletPath);
 				if (typePath.equals(AcfunMaidianConstants.H5)) {
 					return AcfunMaidianConstants.H5;
-				} else if(typePath.equals(AcfunMaidianConstants.WEB)){
+				} else if (typePath.equals(AcfunMaidianConstants.WEB)) {
 					return AcfunMaidianConstants.WEB;
 				}
 			} else {
@@ -281,7 +353,6 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			}
 			return null;
 		}
-		
 
 		@Override
 		public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -289,23 +360,24 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			response.setHeader("Access-Control-Allow-Origin", "*");
 			try {
 				String httpType = getHttpType(request);
-				
-				if(StringUtils.isEmpty(httpType)){
-					LOG.warn("路径："+httpType+"不明确，找不到对应的HTTPSourceHandler，请检查请求路径，或配置文件配置的handler是否正确");
-					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "路径："+httpType+"不明确，请检查请求路径 ");
+
+				if (StringUtils.isEmpty(httpType)) {
+					LOG.warn("路径：" + httpType + "不明确，找不到对应的HTTPSourceHandler，请检查请求路径，或配置文件配置的handler是否正确");
+					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "路径：" + httpType + "不明确，请检查请求路径 ");
 					return;
 				}
 				events = bizTypeHandlerMap.get(httpType).getEvents(request);
-				if(events == null){
+				if (events == null) {
 					return;
 				}
-				
-			}catch (HTTPBadRequestException ex) {
+
+			} catch (HTTPBadRequestException ex) {
 				LOG.warn("Received bad request from client. ", ex);
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request from client. " + ex.getMessage());
 				return;
 			} catch (Exception ex) {
-				LOG.error("Deserializer threw unexpected exception. "+AcfunNetUtils.getRealIp(request)+" : "+ex.getMessage(), ex);
+				LOG.error("Deserializer threw unexpected exception. " + AcfunNetUtils.getRealIp(request) + " : "
+						+ ex.getMessage(), ex);
 				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
 						"Deserializer threw unexpected exception. " + ex.getMessage());
 				return;
@@ -334,13 +406,12 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			sourceCounter.incrementAppendBatchAcceptedCount();
 			sourceCounter.addToEventAcceptedCount(events.size());
 		}
-		
 
 		@Override
 		public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 			doPost(request, response);
 		}
-		
+
 	}
 
 	private static class HTTPSourceSocketConnector extends SslSocketConnector {
@@ -363,6 +434,39 @@ public class AcfunHttpSource extends AbstractSource implements EventDrivenSource
 			}
 			socket.setEnabledProtocols(newProtocols.toArray(new String[newProtocols.size()]));
 			return socket;
+		}
+	}
+
+	public class AcFunMaidianConfFileWatcherRunnable implements Runnable {
+
+		private  HashMap<File,Long>  fileLastChangeMap = new HashMap<File,Long>();
+		
+		private  Map<File,HTTPSourceHandler> fileHandlerMap;
+
+		public AcFunMaidianConfFileWatcherRunnable(Map<File,HTTPSourceHandler> fileHandlerMap) {
+			this.fileHandlerMap = fileHandlerMap;
+			Iterator<File> iterator = fileHandlerMap.keySet().iterator();
+			while(iterator.hasNext()){
+				fileLastChangeMap.put(iterator.next(), 0L);
+			}
+		}
+
+		@Override
+		public void run() {
+			Iterator<File> iterator = fileHandlerMap.keySet().iterator();
+			while(iterator.hasNext()){
+				File file = iterator.next();
+				long lastModified = file.lastModified();
+				long lastChange = fileLastChangeMap.get(file);
+				if (lastModified > lastChange) {
+					HTTPSourceHandler httpSourceHandler = fileHandlerMap.get(file);
+					LOG.info(file.getAbsolutePath()+"has changed......re configure handler:"+httpSourceHandler.getClass().getName());
+					fileLastChangeMap.put(file, lastModified);
+					Context context = new Context();
+					context.put(AcfunMaidianConstants.CONFIG_HANDLERS_CONF_PATH, file.getAbsolutePath());
+					httpSourceHandler.configure(context);
+				}
+			}
 		}
 	}
 }
